@@ -27,7 +27,6 @@
     *   pnpm (менеджер пакетів)
     *   ESLint & Prettier (для якості коду)
 
-
 ## 📸 Скріншоти
 
 <img width="797" alt="image" src="https://github.com/user-attachments/assets/ee1fb082-163a-4bcf-aa62-a99805b3e189" />
