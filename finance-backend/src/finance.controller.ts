@@ -1,17 +1,30 @@
-// finance-backend/src/finance.controller.ts (або src/finance.controller.ts)
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import { FinanceService } from './finance.service'; // Або '../finance.service'
-import { CalculateDto } from './finance/dto/calculate.dto'; // Або './finance/dto/calculate.dto'
-import { ResultDto } from './finance/dto/result.dto'; // Або './finance/dto/result.dto'
+// finance-backend/src/finance.controller.ts
+import {
+  Controller,
+  Post,
+  Body,
+  HttpCode,
+  HttpStatus,
+  Get,
+} from '@nestjs/common';
+import { FinanceService } from './finance.service'; // Сервіс знаходиться на тому ж рівні
+import { CalculateDto } from './finance/dto/calculate.dto'; // Шлях до DTO
+import { ResultDto } from './finance/dto/result.dto'; // Шлях до DTO
+import { CalculationHistoryEntity } from './finance/calculation-history.entity'; // Шлях до Entity
 
-@Controller('finance')
+@Controller('finance') // Базовий маршрут /finance
 export class FinanceController {
   constructor(private readonly financeService: FinanceService) {}
 
-  @Post('calculate')
+  @Post('calculate') // POST /finance/calculate
   @HttpCode(HttpStatus.OK)
-  // Метод тепер асинхронний і повертає Promise<ResultDto>
   async calculate(@Body() dto: CalculateDto): Promise<ResultDto> {
-    return await this.financeService.calculateLoan(dto); // Додаємо await
+    return await this.financeService.calculateLoan(dto);
+  }
+
+  @Get('history') // GET /finance/history
+  @HttpCode(HttpStatus.OK)
+  async getHistory(): Promise<CalculationHistoryEntity[]> {
+    return this.financeService.getHistory();
   }
 }
