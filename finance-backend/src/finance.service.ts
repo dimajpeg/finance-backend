@@ -1,7 +1,9 @@
-// finance-backend/src/finance/finance.service.ts
+// finance-backend/src/finance.service.ts
 import { Injectable } from '@nestjs/common';
+// Шляхи до DTO, які знаходяться в src/finance/dto/
 import { CalculateDto } from './finance/dto/calculate.dto';
 import { ResultDto } from './finance/dto/result.dto';
+// ... решта коду сервісу ...
 
 @Injectable()
 export class FinanceService {

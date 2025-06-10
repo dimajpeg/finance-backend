@@ -1,5 +1,5 @@
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import { FinanceService } from './finance.service'; // Або './finance/finance.service'
+import { FinanceService } from './finance.service';
 import { CalculateDto } from './finance/dto/calculate.dto';
 import { ResultDto } from './finance/dto/result.dto';
 
