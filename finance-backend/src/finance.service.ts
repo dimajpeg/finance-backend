@@ -1,20 +1,28 @@
 // finance-backend/src/finance.service.ts
 import { Injectable } from '@nestjs/common';
-// Шляхи до DTO, які знаходяться в src/finance/dto/
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+// Шляхи до DTO та Entity тепер вказують на підтеку 'finance'
 import { CalculateDto } from './finance/dto/calculate.dto';
 import { ResultDto } from './finance/dto/result.dto';
-// ... решта коду сервісу ...
+import { CalculationHistoryEntity } from './finance/calculation-history.entity';
 
 @Injectable()
 export class FinanceService {
-  calculateLoan(data: CalculateDto): ResultDto {
+  // Ін'єктуємо репозиторій для CalculationHistoryEntity
+  constructor(
+    @InjectRepository(CalculationHistoryEntity)
+    private historyRepository: Repository<CalculationHistoryEntity>,
+  ) {}
+
+  // Метод розрахунку тепер асинхронний, оскільки ми зберігаємо в БД
+  async calculateLoan(data: CalculateDto): Promise<ResultDto> {
+    // Повертаємо Promise<ResultDto>
     const { loanAmount, annualRate, durationMonths } = data;
     const monthlyRate = annualRate / 12 / 100;
 
-    // Запобігання діленню на нуль або некоректним ставкам
     if (monthlyRate === 0) {
-      // Якщо ставка 0, щомісячний платіж - це просто сума кредиту / кількість місяців
-      // Або можна повернути помилку чи спеціальний результат
+      // ... (логіка для ставки 0, як була раніше) ...
       const monthlyPayment = loanAmount / durationMonths;
       const result: ResultDto = {
         monthlyPayment: parseFloat(monthlyPayment.toFixed(2)),
@@ -29,22 +37,19 @@ export class FinanceService {
           month: i,
           principal: parseFloat(principal.toFixed(2)),
           interest: 0,
-          balance: parseFloat(Math.max(0, balance).toFixed(2)), // Баланс не може бути < 0
+          balance: parseFloat(Math.max(0, balance).toFixed(2)),
         });
       }
+      // ЗБЕРІГАЄМО В ІСТОРІЮ
+      await this.saveCalculationToHistory(data, result);
       return result;
     }
 
-    // Формула ануїтетного платежу
     const monthlyPayment =
       (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, durationMonths)) /
       (Math.pow(1 + monthlyRate, durationMonths) - 1);
 
-    // Перевірка на NaN або Infinity, якщо вхідні дані некоректні
     if (!isFinite(monthlyPayment)) {
-      // Можна кинути помилку або повернути результат з помилкою
-      // Для простоти, поки що повернемо "порожній" результат або специфічну помилку
-      // Але краще було б додати валідацію на DTO
       console.error('Calculation error: monthlyPayment is not finite.', data);
       throw new Error(
         'Invalid input data for loan calculation resulting in non-finite monthly payment.',
@@ -63,24 +68,39 @@ export class FinanceService {
       const principal = monthlyPayment - interest;
       balance -= principal;
       result.totalInterest += interest;
-
-      // Переконаємося, що баланс не стає від'ємним через округлення
       const currentBalance = parseFloat(Math.max(0, balance).toFixed(2));
-
       result.paymentSchedule.push({
         month: i,
         principal: parseFloat(principal.toFixed(2)),
         interest: parseFloat(interest.toFixed(2)),
         balance: currentBalance,
       });
-
-      // Якщо баланс досяг нуля раніше, зупиняємо цикл
       if (currentBalance === 0 && i < durationMonths) {
-        // Можна скоригувати останній платіж, якщо потрібно, але для простоти поки так
         break;
       }
     }
     result.totalInterest = parseFloat(result.totalInterest.toFixed(2));
+
+    // ЗБЕРІГАЄМО В ІСТОРІЮ
+    await this.saveCalculationToHistory(data, result);
+
     return result;
+  }
+
+  // Новий приватний метод для збереження історії
+  private async saveCalculationToHistory(
+    params: CalculateDto,
+    result: ResultDto,
+  ): Promise<void> {
+    const historyEntry = this.historyRepository.create({
+      loanAmount: params.loanAmount,
+      annualRate: params.annualRate,
+      durationMonths: params.durationMonths,
+      monthlyPayment: result.monthlyPayment,
+      totalInterest: result.totalInterest,
+      // calculationDate встановлюється автоматично завдяки @CreateDateColumn
+    });
+    await this.historyRepository.save(historyEntry);
+    console.log('Calculation saved to history:', historyEntry.id); // Логування для перевірки
   }
 }

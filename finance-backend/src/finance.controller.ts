@@ -1,15 +1,17 @@
+// finance-backend/src/finance.controller.ts (або src/finance.controller.ts)
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import { FinanceService } from './finance.service';
-import { CalculateDto } from './finance/dto/calculate.dto';
-import { ResultDto } from './finance/dto/result.dto';
+import { FinanceService } from './finance.service'; // Або '../finance.service'
+import { CalculateDto } from './finance/dto/calculate.dto'; // Або './finance/dto/calculate.dto'
+import { ResultDto } from './finance/dto/result.dto'; // Або './finance/dto/result.dto'
 
-@Controller('finance') // Маршрут для цього контролера буде /finance
+@Controller('finance')
 export class FinanceController {
   constructor(private readonly financeService: FinanceService) {}
 
-  @Post('calculate') // Повний шлях буде POST /finance/calculate
-  @HttpCode(HttpStatus.OK) // Встановлюємо статус відповіді 200 OK
-  calculate(@Body() dto: CalculateDto): ResultDto {
-    return this.financeService.calculateLoan(dto);
+  @Post('calculate')
+  @HttpCode(HttpStatus.OK)
+  // Метод тепер асинхронний і повертає Promise<ResultDto>
+  async calculate(@Body() dto: CalculateDto): Promise<ResultDto> {
+    return await this.financeService.calculateLoan(dto); // Додаємо await
   }
 }
